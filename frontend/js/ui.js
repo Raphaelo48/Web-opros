@@ -16,18 +16,30 @@ const UI = {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     },
     
-    // Обновить счётчик на главной
-    updateBadge: function() {
+    // ============================================================
+    //  ⭐ ИСПРАВЛЕНО: Обновить счётчик на главной (async/await)
+    // ============================================================
+    
+    updateBadge: async function() {  // ← добавили async
         const badge = document.getElementById('total-passed-badge');
         if (badge) {
-            badge.textContent = Storage.getResults().length;
+            try {
+                const results = await Storage.getResults();  // ← добавили await
+                badge.textContent = results.length;
+            } catch (e) {
+                console.error('❌ Ошибка обновления бейджа:', e);
+                badge.textContent = '0';
+            }
         }
     },
     
-    // Перейти на главную
-    goHome: function() {
+    // ============================================================
+    //  ⭐ ИСПРАВЛЕНО: Перейти на главную (с await)
+    // ============================================================
+    
+    goHome: async function() {  // ← добавили async
         this.showScreen('start-screen');
-        this.updateBadge();
+        await this.updateBadge();  // ← добавили await
     },
     
     // Начать опрос
@@ -41,47 +53,71 @@ const UI = {
         }
     },
     
-    // Показать мои результаты
-    showMyResults: function() {
+    // ============================================================
+    //  ⭐ ИСПРАВЛЕНО: Показать мои результаты (с await)
+    // ============================================================
+    
+    showMyResults: async function() {  // ← добавили async
         this.showScreen('myresults-screen');
         if (window.Statistics) {
-            window.Statistics.renderMyResults();
+            await window.Statistics.renderMyResults();  // ← добавили await
+        } else {
+            console.error('❌ Statistics не загружен!');
         }
     },
     
-    // Показать статистику
-    showStats: function() {
+    // ============================================================
+    //  ⭐ ИСПРАВЛЕНО: Показать статистику (с await)
+    // ============================================================
+    
+    showStats: async function() {  // ← добавили async
         this.showScreen('stats-screen');
         if (window.Statistics) {
-            window.Statistics.renderStats();
+            await window.Statistics.renderStats();  // ← добавили await
+        } else {
+            console.error('❌ Statistics не загружен!');
         }
     }
 };
 
 // ============================================================
-//  ГЛОБАЛЬНЫЕ ФУНКЦИИ ДЛЯ ВЫЗОВА ИЗ HTML
+//  ⭐ ИСПРАВЛЕНО: ГЛОБАЛЬНЫЕ ФУНКЦИИ (с async/await)
 // ============================================================
 
 // Основные навигационные функции
 window.showScreen = function(id) { UI.showScreen(id); };
-window.updateBadge = function() { UI.updateBadge(); };
-window.backToStart = function() { UI.goHome(); };
-window.startQuiz = function() { UI.startQuiz(); };
 
-// Функции для статистики (используют UI + Statistics)
-window.showMyResults = function() {
+// ⭐ Обновлённый updateBadge (асинхронный)
+window.updateBadge = async function() { 
+    await UI.updateBadge(); 
+};
+
+// ⭐ Обновлённый backToStart (асинхронный)
+window.backToStart = async function() { 
+    await UI.goHome(); 
+};
+
+window.startQuiz = function() { 
+    UI.startQuiz(); 
+};
+
+// ============================================================
+//  ⭐ ИСПРАВЛЕНО: Функции для статистики (с async/await)
+// ============================================================
+
+window.showMyResults = async function() {
     UI.showScreen('myresults-screen');
     if (window.Statistics) {
-        window.Statistics.renderMyResults();
+        await window.Statistics.renderMyResults();
     } else {
         console.error('❌ Statistics не загружен!');
     }
 };
 
-window.showStats = function() {
+window.showStats = async function() {
     UI.showScreen('stats-screen');
     if (window.Statistics) {
-        window.Statistics.renderStats();
+        await window.Statistics.renderStats();
     } else {
         console.error('❌ Statistics не загружен!');
     }

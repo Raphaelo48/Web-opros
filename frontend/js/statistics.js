@@ -15,13 +15,12 @@ const Statistics = {
     },
     
     // ============================================================
-    //  ⭐ ИСПРАВЛЕНО: МОИ РЕЗУЛЬТАТЫ (с async/await)
+    //  МОИ РЕЗУЛЬТАТЫ (с async/await)
     // ============================================================
     
-    renderMyResults: async function() {  // ← добавили async
+    renderMyResults: async function() {
         this.destroyCharts();
         
-        // ⭐ Все вызовы Storage с await
         const myResults = await Storage.getMyResults();
         const allResults = await Storage.getResults();
         const stats = await Storage.getStats();
@@ -29,7 +28,8 @@ const Statistics = {
         
         const content = document.getElementById('myresults-content');
 
-        if (myResults.length === 0) {
+        // ✅ Если нет результатов — показываем сообщение
+        if (!myResults || myResults.length === 0) {
             content.innerHTML = `
                 <div class="empty-state">
                     <div class="empty-icon">📝</div>
@@ -40,18 +40,23 @@ const Statistics = {
             return;
         }
 
+        // ✅ Теперь данные точно есть — безопасно считаем
         const sorted = [...myResults].sort((a, b) => new Date(a.date) - new Date(b.date));
         const total = myResults.length;
-        const myAvg = (myResults.reduce((s, r) => s + r.totalScore, 0) / total).toFixed(1);
-        const myBest = Math.max(...myResults.map(r => r.totalScore));
+        
+        // ✅ Защита от NaN: проверяем, что total > 0
+        const myAvg = total > 0 ? (myResults.reduce((s, r) => s + (r.totalScore || 0), 0) / total).toFixed(1) : '0';
+        const myBest = total > 0 ? Math.max(...myResults.map(r => r.totalScore || 0)) : 0;
         const first = sorted[0];
         const last = sorted[sorted.length - 1];
-        const progress = last.totalScore - first.totalScore;
+        const progress = total > 1 ? last.totalScore - first.totalScore : 0;
         
-        const myAvgRegime = (myResults.reduce((s, r) => s + r.regime, 0) / total);
-        const myAvgFastfood = (myResults.reduce((s, r) => s + r.fastfood, 0) / total);
-        const myAvgConcentration = (myResults.reduce((s, r) => s + r.concentration, 0) / total);
+        // ✅ Защита от NaN для категорий
+        const myAvgRegime = total > 0 ? (myResults.reduce((s, r) => s + (r.regime || 0), 0) / total) : 0;
+        const myAvgFastfood = total > 0 ? (myResults.reduce((s, r) => s + (r.fastfood || 0), 0) / total) : 0;
+        const myAvgConcentration = total > 0 ? (myResults.reduce((s, r) => s + (r.concentration || 0), 0) / total) : 0;
 
+        // Сообщение о прогрессе
         let progressMsg;
         if (total === 1) {
             progressMsg = `Это ваше первое прохождение. Пройдите опрос ещё раз, чтобы отследить динамику изменений!`;
@@ -107,32 +112,32 @@ const Statistics = {
                     <span class="label">🎯 Общий балл</span>
                     <div class="values">
                         <span class="mine">${(+myAvg).toFixed(1)}</span>
-                        <span class="avg">/ ${stats.avg.toFixed(1)} среднее</span>
-                        ${diffHtml(+myAvg, stats.avg)}
+                        <span class="avg">/ ${stats.avg ? stats.avg.toFixed(1) : '0'} среднее</span>
+                        ${diffHtml(+myAvg, stats.avg || 0)}
                     </div>
                 </div>
                 <div class="comparison-row">
                     <span class="label">⏰ Режим</span>
                     <div class="values">
                         <span class="mine">${myAvgRegime.toFixed(1)}</span>
-                        <span class="avg">/ ${catAvg.regime.toFixed(1)} среднее</span>
-                        ${diffHtml(myAvgRegime, catAvg.regime)}
+                        <span class="avg">/ ${catAvg.regime ? catAvg.regime.toFixed(1) : '0'} среднее</span>
+                        ${diffHtml(myAvgRegime, catAvg.regime || 0)}
                     </div>
                 </div>
                 <div class="comparison-row">
                     <span class="label">🍔 Фастфуд</span>
                     <div class="values">
                         <span class="mine">${myAvgFastfood.toFixed(1)}</span>
-                        <span class="avg">/ ${catAvg.fastfood.toFixed(1)} среднее</span>
-                        ${diffHtml(myAvgFastfood, catAvg.fastfood)}
+                        <span class="avg">/ ${catAvg.fastfood ? catAvg.fastfood.toFixed(1) : '0'} среднее</span>
+                        ${diffHtml(myAvgFastfood, catAvg.fastfood || 0)}
                     </div>
                 </div>
                 <div class="comparison-row">
                     <span class="label">🧠 Концентрация</span>
                     <div class="values">
                         <span class="mine">${myAvgConcentration.toFixed(1)}</span>
-                        <span class="avg">/ ${catAvg.concentration.toFixed(1)} среднее</span>
-                        ${diffHtml(myAvgConcentration, catAvg.concentration)}
+                        <span class="avg">/ ${catAvg.concentration ? catAvg.concentration.toFixed(1) : '0'} среднее</span>
+                        ${diffHtml(myAvgConcentration, catAvg.concentration || 0)}
                     </div>
                 </div>
             </div>
@@ -161,7 +166,7 @@ const Statistics = {
 
         // === ГРАФИК 1: Прогресс ===
         const labels = sorted.map((r, i) => `#${i + 1}`);
-        const data = sorted.map(r => r.totalScore);
+        const data = sorted.map(r => r.totalScore || 0);
         const ctx1 = document.getElementById('my-chart-progress').getContext('2d');
         const gradient1 = ctx1.createLinearGradient(0, 0, 0, 260);
         gradient1.addColorStop(0, 'rgba(245, 158, 11, 0.4)');
@@ -188,7 +193,7 @@ const Statistics = {
                     },
                     {
                         label: 'Среднее по всем',
-                        data: new Array(sorted.length).fill(stats.avg),
+                        data: new Array(sorted.length).fill(stats.avg || 0),
                         borderColor: '#94a3b8',
                         borderDash: [6, 4],
                         borderWidth: 2,
@@ -231,9 +236,9 @@ const Statistics = {
                     {
                         label: 'Среднее',
                         data: [
-                            (catAvg.regime / 16) * 100,
-                            (catAvg.fastfood / 12) * 100,
-                            (catAvg.concentration / 12) * 100
+                            (catAvg.regime || 0) / 16 * 100,
+                            (catAvg.fastfood || 0) / 12 * 100,
+                            (catAvg.concentration || 0) / 12 * 100
                         ],
                         backgroundColor: 'rgba(99, 102, 241, 0.15)',
                         borderColor: '#6366f1',
@@ -294,7 +299,7 @@ const Statistics = {
         list.innerHTML = reversedSorted.map((r, idx) => {
             const d = new Date(r.date);
             const dateStr = d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-            const ratio = r.totalScore / 40;
+            const ratio = (r.totalScore || 0) / 40;
             let color, bg;
             if (ratio >= 0.8) { color = '#059669'; bg = '#d1fae5'; }
             else if (ratio >= 0.6) { color = '#4f46e5'; bg = '#e0e7ff'; }
@@ -304,22 +309,21 @@ const Statistics = {
                 <div class="recent-item">
                     <div class="ri-left">
                         <span class="ri-date">📅 ${dateStr}</span>
-                        <span class="ri-cats">⏰${r.regime} · 🍔${r.fastfood} · 🧠${r.concentration}</span>
+                        <span class="ri-cats">⏰${r.regime || 0} · 🍔${r.fastfood || 0} · 🧠${r.concentration || 0}</span>
                     </div>
-                    <span class="ri-score" style="color: ${color}; background: ${bg};">Попытка #${reversedSorted.length - idx} · ${r.totalScore}/40</span>
+                    <span class="ri-score" style="color: ${color}; background: ${bg};">Попытка #${reversedSorted.length - idx} · ${r.totalScore || 0}/40</span>
                 </div>
             `;
         }).join('');
     },
 
     // ============================================================
-    //  ⭐ ИСПРАВЛЕНО: ОБЩАЯ СТАТИСТИКА (с async/await)
+    //  ОБЩАЯ СТАТИСТИКА (с async/await)
     // ============================================================
     
-    renderStats: async function() {  // ← добавили async
+    renderStats: async function() {
         this.destroyCharts();
         
-        // ⭐ Все вызовы Storage с await
         const results = await Storage.getResults();
         const stats = await Storage.getStats();
         const catAvg = await Storage.getCategoryAverages();
@@ -328,12 +332,12 @@ const Statistics = {
         
         const content = document.getElementById('stats-content');
 
-        document.getElementById('stat-total').textContent = stats.total;
-        document.getElementById('stat-avg').textContent = stats.avg.toFixed(1);
-        document.getElementById('stat-best').textContent = stats.best;
-        document.getElementById('stat-today').textContent = stats.today;
+        document.getElementById('stat-total').textContent = stats.total || 0;
+        document.getElementById('stat-avg').textContent = stats.avg ? stats.avg.toFixed(1) : '0';
+        document.getElementById('stat-best').textContent = stats.best || 0;
+        document.getElementById('stat-today').textContent = stats.today || 0;
 
-        if (stats.total === 0) {
+        if (!stats || stats.total === 0) {
             content.innerHTML = `
                 <div class="empty-state">
                     <div class="empty-icon">📭</div>
@@ -378,10 +382,10 @@ const Statistics = {
         chartInstances.push(new Chart(ctx1, {
             type: 'line',
             data: {
-                labels: daily.map(d => d.date),
+                labels: daily.map(d => d.date || ''),
                 datasets: [{
                     label: 'Прохождений',
-                    data: daily.map(d => d.count),
+                    data: daily.map(d => d.count || 0),
                     borderColor: '#6366f1',
                     backgroundColor: gradient1,
                     fill: true,
@@ -413,7 +417,7 @@ const Statistics = {
                 labels: ['⏰ Режим', '🍔 Фастфуд', '🧠 Концентрация'],
                 datasets: [{
                     label: 'Средний балл',
-                    data: [catAvg.regime, catAvg.fastfood, catAvg.concentration],
+                    data: [catAvg.regime || 0, catAvg.fastfood || 0, catAvg.concentration || 0],
                     backgroundColor: [
                         'rgba(99, 102, 241, 0.8)',
                         'rgba(245, 158, 11, 0.8)',
@@ -449,7 +453,7 @@ const Statistics = {
             data: {
                 labels: ['🌟 Отлично', '👍 Хорошо', '⚠️ Средне', '🚨 Плохо'],
                 datasets: [{
-                    data: [verdicts.excellent, verdicts.good, verdicts.average, verdicts.poor],
+                    data: [verdicts.excellent || 0, verdicts.good || 0, verdicts.average || 0, verdicts.poor || 0],
                     backgroundColor: ['#10b981', '#6366f1', '#f59e0b', '#ef4444'],
                     borderColor: '#fff',
                     borderWidth: 3
@@ -469,7 +473,7 @@ const Statistics = {
         list.innerHTML = sorted.map(r => {
             const d = new Date(r.date);
             const dateStr = d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' }) + ', ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-            const ratio = r.totalScore / 40;
+            const ratio = (r.totalScore || 0) / 40;
             let color, bg;
             if (ratio >= 0.8) { color = '#059669'; bg = '#d1fae5'; }
             else if (ratio >= 0.6) { color = '#4f46e5'; bg = '#e0e7ff'; }
@@ -480,9 +484,9 @@ const Statistics = {
                 <div class="recent-item">
                     <div class="ri-left">
                         <span class="ri-date">📅 ${dateStr}${mineBadge}</span>
-                        <span class="ri-cats">⏰${r.regime} · 🍔${r.fastfood} · 🧠${r.concentration}</span>
+                        <span class="ri-cats">⏰${r.regime || 0} · 🍔${r.fastfood || 0} · 🧠${r.concentration || 0}</span>
                     </div>
-                    <span class="ri-score" style="color: ${color}; background: ${bg};">${r.totalScore}/40</span>
+                    <span class="ri-score" style="color: ${color}; background: ${bg};">${r.totalScore || 0}/40</span>
                 </div>
             `;
         }).join('');
@@ -490,18 +494,18 @@ const Statistics = {
 };
 
 // ============================================================
-//  ⭐ ИСПРАВЛЕНО: ГЛОБАЛЬНЫЕ ФУНКЦИИ (с async/await)
+//  ГЛОБАЛЬНЫЕ ФУНКЦИИ ДЛЯ ВЫЗОВА ИЗ HTML
 // ============================================================
 
 // Эти функции будут доступны из onclick в HTML
 window.showMyResults = async function() {
     UI.showScreen('myresults-screen');
-    await Statistics.renderMyResults();  // ← добавили await
+    await Statistics.renderMyResults();
 };
 
 window.showStats = async function() {
     UI.showScreen('stats-screen');
-    await Statistics.renderStats();  // ← добавили await
+    await Statistics.renderStats();
 };
 
 // Делаем объект Statistics глобальным

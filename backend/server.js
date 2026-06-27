@@ -12,18 +12,15 @@ const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-
-// Раздаём статические файлы из папки frontend (на уровень выше)
 app.use(express.static(path.join(__dirname, "../frontend")));
 
 // ============================================================
 //  ПОДКЛЮЧЕНИЕ К POSTGRESQL
 // ============================================================
 
+// БЕРЁМ ИЗ ПЕРЕМЕННЫХ ОКРУЖЕНИЯ (Railway Variables)
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    // Если нужно отключить SSL (если БД не поддерживает):
-    // ssl: false
 });
 
 // ============================================================
@@ -59,6 +56,11 @@ app.get("/api/results/mine", async (req, res) => {
 // 3. Сохранить новый результат
 app.post("/api/results", async (req, res) => {
     const { date, totalScore, regime, fastfood, concentration, verdict, isMine } = req.body;
+
+    // Валидация
+    if (!date || totalScore === undefined || totalScore < 0 || totalScore > 40) {
+        return res.status(400).json({ error: "Invalid data" });
+    }
 
     try {
         const result = await pool.query(
@@ -204,12 +206,12 @@ async function initDb() {
 }
 
 // ============================================================
-//  ЗАПУСК
+//  ЗАПУСК СЕРВЕРА
 // ============================================================
 
 initDb().then(() => {
     app.listen(port, () => {
-        console.log(`🚀 Сервер запущен нахуй: http://localhost:${port}`);
-        console.log(`🔗 API: http://localhost:${port}/api/results`);
+        console.log(`🚀 Сервер запущен: http://localhost:${port}`);
+        console.log(`🔗 API доступен: http://localhost:${port}/api/results`);
     });
 });

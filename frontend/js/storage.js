@@ -3,7 +3,7 @@
 // ============================================================
 
 const DB_KEY = "nutrition_results";
-const API_URL = "https://web-opros-production.up.railway.app/"
+const API_URL = "https://web-opros-production.up.railway.app/api"
 const Storage = {
     // --- БАЗОВЫЕ ОПЕРАЦИИ ---
     

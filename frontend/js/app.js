@@ -68,8 +68,11 @@ const QuizApp = {
         }
     },
     
-    // Показать финальные результаты
-    showFinalResults: function() {
+    // ============================================================
+    //  ⭐ ИСПРАВЛЕНО: Показать финальные результаты
+    // ============================================================
+    
+    showFinalResults: async function() {  // ← добавили async
         const result = Results.calculate(this.answers);
         const scores = result.scores;
         
@@ -123,7 +126,10 @@ const QuizApp = {
         const recs = Results.getRecommendations(scores);
         document.getElementById('recommendations-list').innerHTML = recs.map(r => `<li>${r}</li>`).join('');
         
-        // Сохраняем результат
+        // ============================================================
+        //  ⭐ ИСПРАВЛЕНО: Сохранение с await
+        // ============================================================
+        
         const resultData = {
             date: new Date().toISOString(),
             totalScore: result.totalScore,
@@ -133,8 +139,13 @@ const QuizApp = {
             verdict: result.verdictKey,
             isMine: true
         };
-        Storage.saveResult(resultData);
-        UI.updateBadge();
+        
+        try {
+            await Storage.saveResult(resultData);  // ← добавили await
+            await UI.updateBadge();                 // ← добавили await
+        } catch (e) {
+            console.error('❌ Ошибка сохранения:', e);
+        }
         
         // Показываем экран результатов
         UI.showScreen('results-screen');
@@ -168,17 +179,26 @@ window.restartQuiz = function() {
     UI.goHome();
 };
 
-window.clearStats = function() {
+// ============================================================
+//  ⭐ ИСПРАВЛЕНО: clearStats с await
+// ============================================================
+
+window.clearStats = async function() {
     if (confirm('Вы уверены, что хотите удалить ВСЕ данные (включая ваши результаты)?')) {
-        Storage.clearResults();
-        UI.updateBadge();
-        // Если мы на странице статистики — обновляем её
-        if (document.getElementById('stats-screen').classList.contains('active')) {
-            Statistics.renderStats();
-        }
-        // Если мы на странице "Мои результаты" — обновляем её
-        if (document.getElementById('myresults-screen').classList.contains('active')) {
-            Statistics.renderMyResults();
+        try {
+            await Storage.clearResults();
+            await UI.updateBadge();
+            
+            // Если мы на странице статистики — обновляем её
+            if (document.getElementById('stats-screen').classList.contains('active')) {
+                await Statistics.renderStats();
+            }
+            // Если мы на странице "Мои результаты" — обновляем её
+            if (document.getElementById('myresults-screen').classList.contains('active')) {
+                await Statistics.renderMyResults();
+            }
+        } catch (e) {
+            console.error('❌ Ошибка очистки:', e);
         }
     }
 };
@@ -187,12 +207,13 @@ window.clearStats = function() {
 window.QuizApp = QuizApp;
 
 // ============================================================
-//  ИНИЦИАЛИЗАЦИЯ
+//  ⭐ ИСПРАВЛЕНО: ИНИЦИАЛИЗАЦИЯ (без демо-данных)
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Загружаем демо-данные
-    seedDemoData();
+    // Демо-данные отключены — теперь данные из БД
+    // seedDemoData();  // ← ЗАКОММЕНТИРОВАНО
+    
     UI.updateBadge();
     console.log('🚀 Приложение запущено!');
 });

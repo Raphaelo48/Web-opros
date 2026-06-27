@@ -15,13 +15,18 @@ const Statistics = {
     },
     
     // ============================================================
-    //  МОИ РЕЗУЛЬТАТЫ
+    //  ⭐ ИСПРАВЛЕНО: МОИ РЕЗУЛЬТАТЫ (с async/await)
     // ============================================================
     
-    renderMyResults: function() {
+    renderMyResults: async function() {  // ← добавили async
         this.destroyCharts();
-        const myResults = Storage.getMyResults();
-        const allResults = Storage.getResults();
+        
+        // ⭐ Все вызовы Storage с await
+        const myResults = await Storage.getMyResults();
+        const allResults = await Storage.getResults();
+        const stats = await Storage.getStats();
+        const catAvg = await Storage.getCategoryAverages();
+        
         const content = document.getElementById('myresults-content');
 
         if (myResults.length === 0) {
@@ -42,9 +47,6 @@ const Statistics = {
         const first = sorted[0];
         const last = sorted[sorted.length - 1];
         const progress = last.totalScore - first.totalScore;
-
-        const stats = Storage.getStats();
-        const catAvg = Storage.getCategoryAverages();
         
         const myAvgRegime = (myResults.reduce((s, r) => s + r.regime, 0) / total);
         const myAvgFastfood = (myResults.reduce((s, r) => s + r.fastfood, 0) / total);
@@ -311,16 +313,19 @@ const Statistics = {
     },
 
     // ============================================================
-    //  ОБЩАЯ СТАТИСТИКА
+    //  ⭐ ИСПРАВЛЕНО: ОБЩАЯ СТАТИСТИКА (с async/await)
     // ============================================================
     
-    renderStats: function() {
+    renderStats: async function() {  // ← добавили async
         this.destroyCharts();
-        const results = Storage.getResults();
-        const stats = Storage.getStats();
-        const catAvg = Storage.getCategoryAverages();
-        const verdicts = Storage.getVerdictCounts();
-        const daily = Storage.getDailyCounts(14);
+        
+        // ⭐ Все вызовы Storage с await
+        const results = await Storage.getResults();
+        const stats = await Storage.getStats();
+        const catAvg = await Storage.getCategoryAverages();
+        const verdicts = await Storage.getVerdictCounts();
+        const daily = await Storage.getDailyCounts(14);
+        
         const content = document.getElementById('stats-content');
 
         document.getElementById('stat-total').textContent = stats.total;
@@ -485,18 +490,18 @@ const Statistics = {
 };
 
 // ============================================================
-//  ГЛОБАЛЬНЫЕ ФУНКЦИИ ДЛЯ ВЫЗОВА ИЗ HTML
+//  ⭐ ИСПРАВЛЕНО: ГЛОБАЛЬНЫЕ ФУНКЦИИ (с async/await)
 // ============================================================
 
 // Эти функции будут доступны из onclick в HTML
-window.showMyResults = function() {
+window.showMyResults = async function() {
     UI.showScreen('myresults-screen');
-    Statistics.renderMyResults();
+    await Statistics.renderMyResults();  // ← добавили await
 };
 
-window.showStats = function() {
+window.showStats = async function() {
     UI.showScreen('stats-screen');
-    Statistics.renderStats();
+    await Statistics.renderStats();  // ← добавили await
 };
 
 // Делаем объект Statistics глобальным

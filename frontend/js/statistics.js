@@ -44,12 +44,12 @@ const Statistics = {
         const sorted = [...myResults].sort((a, b) => new Date(a.date) - new Date(b.date));
         const total = myResults.length;
         
-        // ✅ Защита от NaN: проверяем, что total > 0
-        const myAvg = total > 0 ? (myResults.reduce((s, r) => s + (r.totalScore || 0), 0) / total).toFixed(1) : '0';
-        const myBest = total > 0 ? Math.max(...myResults.map(r => r.totalScore || 0)) : 0;
+        // ⭐ ИСПРАВЛЕНО: total_score вместо totalScore
+        const myAvg = total > 0 ? (myResults.reduce((s, r) => s + (r.total_score || 0), 0) / total).toFixed(1) : '0';
+        const myBest = total > 0 ? Math.max(...myResults.map(r => r.total_score || 0)) : 0;
         const first = sorted[0];
         const last = sorted[sorted.length - 1];
-        const progress = total > 1 ? last.totalScore - first.totalScore : 0;
+        const progress = total > 1 ? last.total_score - first.total_score : 0;
         
         // ✅ Защита от NaN для категорий
         const myAvgRegime = total > 0 ? (myResults.reduce((s, r) => s + (r.regime || 0), 0) / total) : 0;
@@ -166,7 +166,8 @@ const Statistics = {
 
         // === ГРАФИК 1: Прогресс ===
         const labels = sorted.map((r, i) => `#${i + 1}`);
-        const data = sorted.map(r => r.totalScore || 0);
+        // ⭐ ИСПРАВЛЕНО: total_score вместо totalScore
+        const data = sorted.map(r => r.total_score || 0);
         const ctx1 = document.getElementById('my-chart-progress').getContext('2d');
         const gradient1 = ctx1.createLinearGradient(0, 0, 0, 260);
         gradient1.addColorStop(0, 'rgba(245, 158, 11, 0.4)');
@@ -299,7 +300,8 @@ const Statistics = {
         list.innerHTML = reversedSorted.map((r, idx) => {
             const d = new Date(r.date);
             const dateStr = d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-            const ratio = (r.totalScore || 0) / 40;
+            // ⭐ ИСПРАВЛЕНО: total_score вместо totalScore
+            const ratio = (r.total_score || 0) / 40;
             let color, bg;
             if (ratio >= 0.8) { color = '#059669'; bg = '#d1fae5'; }
             else if (ratio >= 0.6) { color = '#4f46e5'; bg = '#e0e7ff'; }
@@ -311,7 +313,7 @@ const Statistics = {
                         <span class="ri-date">📅 ${dateStr}</span>
                         <span class="ri-cats">⏰${r.regime || 0} · 🍔${r.fastfood || 0} · 🧠${r.concentration || 0}</span>
                     </div>
-                    <span class="ri-score" style="color: ${color}; background: ${bg};">Попытка #${reversedSorted.length - idx} · ${r.totalScore || 0}/40</span>
+                    <span class="ri-score" style="color: ${color}; background: ${bg};">Попытка #${reversedSorted.length - idx} · ${r.total_score || 0}/40</span>
                 </div>
             `;
         }).join('');
@@ -467,26 +469,33 @@ const Statistics = {
             }
         }));
 
-        // === СПИСОК ВСЕХ ПРОХОЖДЕНИЙ ===
+        // === ⭐ ИСПРАВЛЕНО: СПИСОК ВСЕХ ПРОХОЖДЕНИЙ ===
         const list = document.getElementById('recent-list');
         const sorted = [...results].sort((a, b) => new Date(b.date) - new Date(a.date));
         list.innerHTML = sorted.map(r => {
             const d = new Date(r.date);
             const dateStr = d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' }) + ', ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-            const ratio = (r.totalScore || 0) / 40;
+            
+            // ⭐ ИСПРАВЛЕНО: total_score вместо totalScore
+            const ratio = (r.total_score || 0) / 40;
+            
             let color, bg;
             if (ratio >= 0.8) { color = '#059669'; bg = '#d1fae5'; }
             else if (ratio >= 0.6) { color = '#4f46e5'; bg = '#e0e7ff'; }
             else if (ratio >= 0.4) { color = '#d97706'; bg = '#fef3c7'; }
             else { color = '#dc2626'; bg = '#fee2e2'; }
-            const mineBadge = r.isMine ? '<span style="background:#fef3c7;color:#d97706;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;margin-left:6px;">ВЫ</span>' : '';
+            
+            // ⭐ ИСПРАВЛЕНО: is_mine вместо isMine
+            const mineBadge = r.is_mine ? '<span style="background:#fef3c7;color:#d97706;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;margin-left:6px;">ВЫ</span>' : '';
+            
             return `
                 <div class="recent-item">
                     <div class="ri-left">
                         <span class="ri-date">📅 ${dateStr}${mineBadge}</span>
                         <span class="ri-cats">⏰${r.regime || 0} · 🍔${r.fastfood || 0} · 🧠${r.concentration || 0}</span>
                     </div>
-                    <span class="ri-score" style="color: ${color}; background: ${bg};">${r.totalScore || 0}/40</span>
+                    <!-- ⭐ ИСПРАВЛЕНО: total_score вместо totalScore -->
+                    <span class="ri-score" style="color: ${color}; background: ${bg};">${r.total_score || 0}/40</span>
                 </div>
             `;
         }).join('');
